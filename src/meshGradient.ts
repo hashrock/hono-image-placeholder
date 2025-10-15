@@ -2,10 +2,8 @@ import { encode as encodePNG } from 'fast-png'
 import { encode as encodeJPEG } from 'jpeg-js'
 import { createNoise2D } from 'simplex-noise'
 
-export interface GridPoint {
-  colorIndex: number  // 0-2 (3色のうちどの色を使うか)
-  influence: number   // 0.0-1.0 (影響度)
-}
+// グリッドは単純な数値配列（colorIndexのみ）
+export type GridPoint = number // 0-2 (3色のうちどの色を使うか)
 
 export interface MeshGradientOptions {
   width: number

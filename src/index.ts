@@ -314,7 +314,8 @@ app.get('/editor', (c) => {
         <div class="controls">
           <button onclick="updatePreview()">プレビュー更新</button>
           <button onclick="copyUrl()" class="secondary">URLコピー</button>
-          <button onclick="randomColors()" class="secondary">ランダム</button>
+          <button onclick="randomColors()" class="secondary">カラーランダム</button>
+          <button onclick="randomGrid()" class="secondary">グリッドランダム</button>
         </div>
 
         <div class="preview">
@@ -335,13 +336,37 @@ app.get('/editor', (c) => {
           <h3>レンダリングモード</h3>
           <div class="form-group">
             <label class="checkbox-label">
-              <input type="radio" name="renderMode" value="js" checked>
-              JavaScript版（安定）
+              <input type="radio" name="renderMode" value="wasm" checked>
+              WASM版（高速・推奨）
             </label>
             <label class="checkbox-label">
-              <input type="radio" name="renderMode" value="wasm">
-              WASM版（実験的・高速）
+              <input type="radio" name="renderMode" value="js">
+              JavaScript版
             </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>画像サイズ</h3>
+          <div class="form-group">
+            <label>幅 (px)</label>
+            <input type="number" id="imageWidth" min="100" max="4096" step="1" value="1920">
+          </div>
+          <div class="form-group">
+            <label>高さ (px)</label>
+            <input type="number" id="imageHeight" min="100" max="4096" step="1" value="1080">
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>グリッドサイズ</h3>
+          <div class="form-group">
+            <label>横 (列)</label>
+            <input type="number" id="gridCols" min="2" max="20" step="1" value="6">
+          </div>
+          <div class="form-group">
+            <label>縦 (行)</label>
+            <input type="number" id="gridRows" min="2" max="20" step="1" value="4">
           </div>
         </div>
 
@@ -397,7 +422,7 @@ app.get('/editor', (c) => {
           </div>
           <div class="form-group">
             <label>振幅</label>
-            <input type="range" id="amplitude" min="0" max="200" step="5" value="125">
+            <input type="range" id="amplitude" min="0" max="1000" step="10" value="125">
             <div id="ampLabel" class="range-value">125</div>
           </div>
         </div>
@@ -558,41 +583,30 @@ app.get('/editor', (c) => {
     // 3色パレット
     const palette = [...palettePresets.default.colors];
 
-    // グリッド（6x4）
-    const grid = [
-      [
-        { colorIndex: 0, influence: 0.8 },
-        { colorIndex: 1, influence: 0.9 },
-        { colorIndex: 2, influence: 0.7 },
-        { colorIndex: 0, influence: 0.6 },
-        { colorIndex: 1, influence: 0.8 },
-        { colorIndex: 2, influence: 0.9 }
-      ],
-      [
-        { colorIndex: 1, influence: 0.7 },
-        { colorIndex: 2, influence: 0.8 },
-        { colorIndex: 0, influence: 0.9 },
-        { colorIndex: 1, influence: 0.7 },
-        { colorIndex: 2, influence: 0.6 },
-        { colorIndex: 0, influence: 0.8 }
-      ],
-      [
-        { colorIndex: 2, influence: 0.9 },
-        { colorIndex: 0, influence: 0.7 },
-        { colorIndex: 1, influence: 0.8 },
-        { colorIndex: 2, influence: 0.9 },
-        { colorIndex: 0, influence: 0.7 },
-        { colorIndex: 1, influence: 0.6 }
-      ],
-      [
-        { colorIndex: 0, influence: 0.6 },
-        { colorIndex: 1, influence: 0.8 },
-        { colorIndex: 2, influence: 0.9 },
-        { colorIndex: 0, influence: 0.7 },
-        { colorIndex: 1, influence: 0.9 },
-        { colorIndex: 2, influence: 0.8 }
-      ]
+    // グリッド（6x4）- 動的にサイズ変更可能
+    let grid = [
+      [0, 1, 2, 0, 1, 2],
+      [1, 2, 0, 1, 2, 0],
+      [2, 0, 1, 2, 0, 1],
+      [0, 1, 2, 0, 1, 2]
     ];
+
+    // グリッドサイズを変更する関数
+    function resizeGrid(rows, cols) {
+      const newGrid = [];
+      for (let row = 0; row < rows; row++) {
+        newGrid[row] = [];
+        for (let col = 0; col < cols; col++) {
+          // 既存の値があればそれを使用、なければランダムに設定
+          if (grid[row] && grid[row][col] !== undefined) {
+            newGrid[row][col] = grid[row][col];
+          } else {
+            newGrid[row][col] = Math.floor(Math.random() * 3);
+          }
+        }
+      }
+      grid = newGrid;
+    }
 
     // カラーグリッドを初期化
     function initColorGrid() {
@@ -612,27 +626,17 @@ app.get('/editor', (c) => {
             option.textContent = \`\${i + 1}\`;
             option.style.background = palette[i];
             option.style.color = 'white';
-            if (i === grid[row][col].colorIndex) {
+            if (i === grid[row][col]) {
               option.selected = true;
             }
             colorSelect.appendChild(option);
           }
           colorSelect.addEventListener('change', (e) => {
-            grid[row][col].colorIndex = parseInt(e.target.value);
-          });
-
-          // 影響度スライダー
-          const influenceSlider = document.createElement('input');
-          influenceSlider.type = 'range';
-          influenceSlider.min = '0';
-          influenceSlider.max = '100';
-          influenceSlider.value = (grid[row][col].influence * 100).toString();
-          influenceSlider.addEventListener('input', (e) => {
-            grid[row][col].influence = parseInt(e.target.value) / 100;
+            grid[row][col] = parseInt(e.target.value);
+            updatePreview();
           });
 
           div.appendChild(colorSelect);
-          div.appendChild(influenceSlider);
           gridElement.appendChild(div);
         }
       }
@@ -641,6 +645,24 @@ app.get('/editor', (c) => {
     // URLを生成
     function generateUrl() {
       const params = new URLSearchParams();
+
+      // 画像サイズ
+      const imageWidth = document.getElementById('imageWidth').value;
+      const imageHeight = document.getElementById('imageHeight').value;
+      params.set('width', imageWidth);
+      params.set('height', imageHeight);
+
+      // グリッドサイズ
+      const gridCols = parseInt(document.getElementById('gridCols').value);
+      const gridRows = parseInt(document.getElementById('gridRows').value);
+      params.set('gridCols', gridCols.toString());
+      params.set('gridRows', gridRows.toString());
+
+      // グリッドサイズが変更された場合はリサイズ
+      if (grid.length !== gridRows || (grid[0] && grid[0].length !== gridCols)) {
+        resizeGrid(gridRows, gridCols);
+      }
+
       params.set('color0', palette[0]);
       params.set('color1', palette[1]);
       params.set('color2', palette[2]);
@@ -659,10 +681,9 @@ app.get('/editor', (c) => {
       params.set('grain', grainEnabled.toString());
       params.set('grainIntensity', grainIntensity);
 
-      for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 6; col++) {
-          params.set(\`g_\${row}_\${col}_c\`, grid[row][col].colorIndex.toString());
-          params.set(\`g_\${row}_\${col}_i\`, grid[row][col].influence.toString());
+      for (let row = 0; row < gridRows; row++) {
+        for (let col = 0; col < gridCols; col++) {
+          params.set(\`g_\${row}_\${col}\`, grid[row][col].toString());
         }
       }
 
@@ -729,15 +750,35 @@ app.get('/editor', (c) => {
       alert('URLをコピーしました！');
     }
 
-    // ランダムなグリッドを生成
+    // ランダムなカラーパレットを生成
     function randomColors() {
-      for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 6; col++) {
-          grid[row][col].colorIndex = Math.floor(Math.random() * 3);
-          grid[row][col].influence = Math.random() * 0.5 + 0.5; // 0.5-1.0
+      const baseHue = Math.floor(Math.random() * 360);
+      palette[0] = hslToHex(baseHue, 80, 47);
+      palette[1] = hslToHex((baseHue + 120) % 360, 80, 47);
+      palette[2] = hslToHex((baseHue + 240) % 360, 80, 47);
+
+      document.getElementById('palette0').value = palette[0];
+      document.getElementById('palette1').value = palette[1];
+      document.getElementById('palette2').value = palette[2];
+
+      initColorGrid();
+      updatePreview();
+    }
+
+    // ランダムなグリッド配置を生成
+    function randomGrid() {
+      const gridCols = parseInt(document.getElementById('gridCols').value);
+      const gridRows = parseInt(document.getElementById('gridRows').value);
+
+      // 現在のグリッドサイズに合わせてリサイズ
+      resizeGrid(gridRows, gridCols);
+
+      // 全セルをランダム化
+      for (let row = 0; row < gridRows; row++) {
+        for (let col = 0; col < gridCols; col++) {
+          grid[row][col] = Math.floor(Math.random() * 3);
         }
       }
-      initColorGrid();
       updatePreview();
     }
 
@@ -801,6 +842,22 @@ app.get('/editor', (c) => {
       });
     });
 
+    // グリッドサイズ変更の監視（自動プレビュー更新）
+    document.getElementById('gridCols').addEventListener('change', () => {
+      updatePreview();
+    });
+    document.getElementById('gridRows').addEventListener('change', () => {
+      updatePreview();
+    });
+
+    // 画像サイズ変更の監視（自動プレビュー更新）
+    document.getElementById('imageWidth').addEventListener('change', () => {
+      updatePreview();
+    });
+    document.getElementById('imageHeight').addEventListener('change', () => {
+      updatePreview();
+    });
+
     // 初期化
     updatePreview();
   </script>
@@ -838,18 +895,35 @@ app.get('/image', async (c) => {
     intensity: parseFloat(params.grainIntensity || '0.04')
   }
 
-  // グリッドを解析（g_0_0_c=0&g_0_0_i=0.8 の形式）
+  // グリッドサイズを取得（デフォルトは6x4）
+  const gridCols = parseInt(params.gridCols || '6')
+  const gridRows = parseInt(params.gridRows || '4')
+
+  // グリッドを解析（g_0_0 の形式、または g_0_0_c=0&g_0_0_i=0.8 の形式）
   const grid: GridPoint[][] = []
-  for (let row = 0; row < 4; row++) {
+  for (let row = 0; row < gridRows; row++) {
     grid[row] = []
-    for (let col = 0; col < 6; col++) {
+    for (let col = 0; col < gridCols; col++) {
+      const simpleKey = `g_${row}_${col}`
       const colorIndexKey = `g_${row}_${col}_c`
       const influenceKey = `g_${row}_${col}_i`
 
-      const defaultPoint = DEFAULT_GRID[row][col]
-      grid[row][col] = {
-        colorIndex: parseInt(params[colorIndexKey] || defaultPoint.colorIndex.toString()),
-        influence: parseFloat(params[influenceKey] || defaultPoint.influence.toString())
+      // デフォルト値を計算（パターン生成）
+      const defaultColorIndex = (row + col) % 3
+      const defaultInfluence = 0.8
+
+      // 簡易形式（g_0_0）が存在する場合はそれを使用
+      if (params[simpleKey] !== undefined) {
+        grid[row][col] = {
+          colorIndex: parseInt(params[simpleKey]),
+          influence: defaultInfluence
+        }
+      } else {
+        // 詳細形式またはデフォルト値を使用
+        grid[row][col] = {
+          colorIndex: parseInt(params[colorIndexKey] || defaultColorIndex.toString()),
+          influence: parseFloat(params[influenceKey] || defaultInfluence.toString())
+        }
       }
     }
   }
@@ -866,8 +940,10 @@ app.get('/image', async (c) => {
   searchParams.set('amp', displacement.amplitude.toString())
   searchParams.set('grain', grain.enabled.toString())
   searchParams.set('grainIntensity', grain.intensity.toString())
-  for (let row = 0; row < 4; row++) {
-    for (let col = 0; col < 6; col++) {
+  searchParams.set('gridCols', gridCols.toString())
+  searchParams.set('gridRows', gridRows.toString())
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
       searchParams.set(`g_${row}_${col}_c`, grid[row][col].colorIndex.toString())
       searchParams.set(`g_${row}_${col}_i`, grid[row][col].influence.toString())
     }
@@ -938,18 +1014,35 @@ app.get('/image-wasm', async (c) => {
     intensity: parseFloat(params.grainIntensity || '0.04')
   }
 
-  // グリッドを解析（g_0_0_c=0&g_0_0_i=0.8 の形式）
+  // グリッドサイズを取得（デフォルトは6x4）
+  const gridCols = parseInt(params.gridCols || '6')
+  const gridRows = parseInt(params.gridRows || '4')
+
+  // グリッドを解析（g_0_0 の形式、または g_0_0_c=0&g_0_0_i=0.8 の形式）
   const grid: GridPoint[][] = []
-  for (let row = 0; row < 4; row++) {
+  for (let row = 0; row < gridRows; row++) {
     grid[row] = []
-    for (let col = 0; col < 6; col++) {
+    for (let col = 0; col < gridCols; col++) {
+      const simpleKey = `g_${row}_${col}`
       const colorIndexKey = `g_${row}_${col}_c`
       const influenceKey = `g_${row}_${col}_i`
 
-      const defaultPoint = DEFAULT_GRID[row][col]
-      grid[row][col] = {
-        colorIndex: parseInt(params[colorIndexKey] || defaultPoint.colorIndex.toString()),
-        influence: parseFloat(params[influenceKey] || defaultPoint.influence.toString())
+      // デフォルト値を計算（パターン生成）
+      const defaultColorIndex = (row + col) % 3
+      const defaultInfluence = 0.8
+
+      // 簡易形式（g_0_0）が存在する場合はそれを使用
+      if (params[simpleKey] !== undefined) {
+        grid[row][col] = {
+          colorIndex: parseInt(params[simpleKey]),
+          influence: defaultInfluence
+        }
+      } else {
+        // 詳細形式またはデフォルト値を使用
+        grid[row][col] = {
+          colorIndex: parseInt(params[colorIndexKey] || defaultColorIndex.toString()),
+          influence: parseFloat(params[influenceKey] || defaultInfluence.toString())
+        }
       }
     }
   }

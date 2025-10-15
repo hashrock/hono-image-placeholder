@@ -83,6 +83,8 @@ export function generateImageFull(
   color1: u32,
   color2: u32,
   gridPtr: usize,  // グリッドデータへのポインタ
+  gridCols: i32,   // グリッド列数
+  gridRows: i32,   // グリッド行数
   displacementEnabled: bool,
   displacementFreq: f32,
   displacementAmp: f32,
@@ -129,24 +131,26 @@ export function generateImageFull(
         sampleY = max(0.0, min(f32(height - 1), sampleY));
       }
 
-      // グリッド座標を計算 (0.0 - 5.0, 0.0 - 3.0)
-      const gridX: f32 = f32(sampleX * invWidth * <f32>5.0);
-      const gridY: f32 = f32(sampleY * invHeight * <f32>3.0);
+      // グリッド座標を計算 (0.0 - (gridCols-1), 0.0 - (gridRows-1))
+      const maxGridX = f32(gridCols - 1);
+      const maxGridY = f32(gridRows - 1);
+      const gridX: f32 = f32(sampleX * invWidth * maxGridX);
+      const gridY: f32 = f32(sampleY * invHeight * maxGridY);
 
       // グリッドのセル位置
       let cellX: i32 = i32(Mathf.floor(gridX));
       let cellY: i32 = i32(Mathf.floor(gridY));
 
-      if (cellX > 4) cellX = 4;
-      if (cellY > 2) cellY = 2;
+      if (cellX >= gridCols - 1) cellX = gridCols - 2;
+      if (cellY >= gridRows - 1) cellY = gridRows - 2;
 
       const tx: f32 = gridX - f32(cellX);
       const ty: f32 = gridY - f32(cellY);
 
-      const topLeftPtr: usize = gridPtr + usize(((cellY * 6) + cellX) << 3);
-      const topRightPtr: usize = gridPtr + usize(((cellY * 6) + (cellX + 1)) << 3);
-      const bottomLeftPtr: usize = gridPtr + usize((((cellY + 1) * 6) + cellX) << 3);
-      const bottomRightPtr: usize = gridPtr + usize((((cellY + 1) * 6) + (cellX + 1)) << 3);
+      const topLeftPtr: usize = gridPtr + usize(((cellY * gridCols) + cellX) << 3);
+      const topRightPtr: usize = gridPtr + usize(((cellY * gridCols) + (cellX + 1)) << 3);
+      const bottomLeftPtr: usize = gridPtr + usize((((cellY + 1) * gridCols) + cellX) << 3);
+      const bottomRightPtr: usize = gridPtr + usize((((cellY + 1) * gridCols) + (cellX + 1)) << 3);
 
       readCornerColor(topLeftPtr,
         palette0R, palette0G, palette0B,

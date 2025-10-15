@@ -50,9 +50,13 @@ export async function generateMeshGradientJPEGWasm(
   const color1 = hexToInt(colors[1])
   const color2 = hexToInt(colors[2])
 
+  // グリッドサイズを取得
+  const gridRows = grid.length
+  const gridCols = grid[0]?.length || 0
+
   // グリッドデータをWASMメモリに転送
-  // グリッド形式: [colorIndex (i32), influence (f32)] × 24ポイント = 192バイト（アライメント考慮）
-  const gridSize = 6 * 4 * 8 // 6列 × 4行 × 8バイト/ポイント
+  // グリッド形式: [colorIndex (i32), influence (f32)] × ポイント数 = gridRows × gridCols × 8バイト/ポイント
+  const gridSize = gridCols * gridRows * 8 // 列 × 行 × 8バイト/ポイント
   const memory = exports.memory as WebAssembly.Memory
 
   const ensureCapacity = (targetEnd: number) => {
@@ -69,8 +73,8 @@ export async function generateMeshGradientJPEGWasm(
   let gridView = new DataView(memory.buffer, gridPtr, gridSize)
 
   let offset = 0
-  for (let row = 0; row < 4; row++) {
-    for (let col = 0; col < 6; col++) {
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
       const point = grid[row][col]
       gridView.setInt32(offset, point.colorIndex, true) // 4バイト
       gridView.setFloat32(offset + 4, point.influence, true) // 4バイト（リトルエンディアン）
@@ -100,6 +104,8 @@ export async function generateMeshGradientJPEGWasm(
     color1,
     color2,
     gridPtr,
+    gridCols,
+    gridRows,
     displacementEnabled,
     displacementFreq,
     displacementAmp,
