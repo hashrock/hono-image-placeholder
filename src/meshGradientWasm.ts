@@ -51,9 +51,20 @@ export async function generateMeshGradientPNGWasm(
   // グリッドデータをWASMメモリに転送
   // グリッド形式: [colorIndex (i32), influence (f32)] × 24ポイント = 192バイト（アライメント考慮）
   const gridSize = 6 * 4 * 8 // 6列 × 4行 × 8バイト/ポイント
-  const gridPtr = exports.allocateBuffer(gridSize)
   const memory = exports.memory as WebAssembly.Memory
-  const gridView = new DataView(memory.buffer, gridPtr, gridSize)
+
+  const ensureCapacity = (targetEnd: number) => {
+    const current = memory.buffer.byteLength
+    if (targetEnd > current) {
+      const pageSize = 64 * 1024
+      const additionalPages = Math.ceil((targetEnd - current) / pageSize)
+      memory.grow(additionalPages)
+    }
+  }
+
+  const gridPtr = exports.allocateBuffer(gridSize)
+  ensureCapacity(gridPtr + gridSize)
+  let gridView = new DataView(memory.buffer, gridPtr, gridSize)
 
   let offset = 0
   for (let row = 0; row < 4; row++) {
@@ -68,9 +79,7 @@ export async function generateMeshGradientPNGWasm(
   // 出力バッファを割り当て
   const bufferSize = width * height * 4
   const outputPtr = exports.allocateBuffer(bufferSize)
-
-  console.log(`WASM grid allocated at: ${gridPtr}`)
-  console.log(`WASM output buffer allocated at: ${outputPtr}, size: ${bufferSize}`)
+  ensureCapacity(outputPtr + bufferSize)
 
   // ディスプレイスメント設定
   const displacementEnabled = displacement?.enabled ?? false
@@ -119,6 +128,9 @@ export async function generateMeshGradientPNGWasm(
 
   console.log(`PNG encode time: ${encodeTime.toFixed(2)}ms`)
   console.log(`Total time: ${(wasmTime + encodeTime).toFixed(2)}ms`)
+
+  exports.freeBuffer(gridPtr)
+  exports.freeBuffer(outputPtr)
 
   return result
 }

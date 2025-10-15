@@ -1,0 +1,48 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "colors": ["#667eea", "#764ba2", "#8b5cf6"],
+  "grid": [
+    [
+      { "colorIndex": 0, "influence": 0.8 },
+      { "colorIndex": 1, "influence": 0.9 },
+      { "colorIndex": 2, "influence": 0.7 },
+      { "colorIndex": 0, "influence": 0.6 },
+      { "colorIndex": 1, "influence": 0.8 },
+      { "colorIndex": 2, "influence": 0.9 }
+    ],
+    [
+      { "colorIndex": 1, "influence": 0.7 },
+      { "colorIndex": 2, "influence": 0.8 },
+      { "colorIndex": 0, "influence": 0.9 },
+      { "colorIndex": 1, "influence": 0.7 },
+      { "colorIndex": 2, "influence": 0.6 },
+      { "colorIndex": 0, "influence": 0.8 }
+    ],
+    [
+      { "colorIndex": 2, "influence": 0.9 },
+      { "colorIndex": 0, "influence": 0.7 },
+      { "colorIndex": 1, "influence": 0.8 },
+      { "colorIndex": 2, "influence": 0.9 },
+      { "colorIndex": 0, "influence": 0.7 },
+      { "colorIndex": 1, "influence": 0.6 }
+    ],
+    [
+      { "colorIndex": 0, "influence": 0.6 },
+      { "colorIndex": 1, "influence": 0.8 },
+      { "colorIndex": 2, "influence": 0.9 },
+      { "colorIndex": 0, "influence": 0.7 },
+      { "colorIndex": 1, "influence": 0.9 },
+      { "colorIndex": 2, "influence": 0.8 }
+    ]
+  ],
+  "displacement": {
+    "enabled": true,
+    "frequency": 0.0012,
+    "amplitude": 125
+  },
+  "grain": {
+    "enabled": true,
+    "intensity": 0.04
+  }
+}
