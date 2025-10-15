@@ -93,24 +93,108 @@ app.get('/editor', (c) => {
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 20px;
+    }
+
+    @media (max-width: 968px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .main-panel, .side-panel {
       background: var(--bg-primary);
-      padding: 30px;
+      padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     h1 {
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       color: var(--text-primary);
+      font-size: 24px;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+
+    h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+    }
+
+    select {
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 13px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 10px;
-      margin-bottom: 30px;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .grid-cell {
+      aspect-ratio: 1;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: var(--bg-primary);
+    }
+
+    .grid-cell select, .grid-cell input {
+      font-size: 10px;
+      padding: 2px;
     }
 
     .color-input {
@@ -119,182 +203,216 @@ app.get('/editor', (c) => {
       gap: 5px;
     }
 
-    .color-input input[type="color"] {
+    .palette-colors {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .color-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .color-picker input[type="color"] {
       width: 100%;
-      height: 60px;
+      height: 40px;
       border: 2px solid var(--border);
       border-radius: 4px;
       cursor: pointer;
     }
 
-    .color-input input[type="text"] {
-      width: 100%;
-      padding: 5px;
-      font-family: monospace;
-      font-size: 12px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      text-align: center;
-      background: var(--bg-primary);
-      color: var(--text-primary);
+    .color-picker label {
+      font-size: 11px;
     }
 
     .preview {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .preview img {
       width: 100%;
-      max-width: 800px;
       border-radius: 4px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: block;
     }
 
     .controls {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
     button {
-      padding: 10px 20px;
+      padding: 8px 16px;
       background: #667eea;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
+      white-space: nowrap;
     }
 
     button:hover {
       background: #5568d3;
     }
 
-    .url-output {
-      margin-top: 20px;
-      padding: 15px;
+    button.secondary {
       background: var(--bg-secondary);
-      border-radius: 4px;
-      word-break: break-all;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover {
+      background: var(--border);
     }
 
     .url-output input {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       border: 1px solid var(--border);
       border-radius: 4px;
       font-family: monospace;
-      font-size: 12px;
+      font-size: 11px;
       background: var(--bg-primary);
       color: var(--text-primary);
     }
 
-    .label {
+    .range-value {
       font-size: 11px;
+      color: var(--text-secondary);
+      text-align: right;
+      margin-top: 2px;
+    }
+
+    #generationTime {
+      margin-top: 8px;
+      font-size: 12px;
       color: var(--text-secondary);
       text-align: center;
     }
 
-    #generationTime {
-      margin-top: 10px;
-      font-size: 14px;
-      color: var(--text-secondary);
-      text-align: center;
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>メッシュグラデーション エディタ</h1>
+    <h1 style="margin-bottom: 20px;">メッシュグラデーション エディタ</h1>
 
-    <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 4px;">
-      <h3 style="margin-bottom: 10px;">カラーパレット（3色）</h3>
-
-      <div style="margin-bottom: 10px;">
-        <label style="display: block; margin-bottom: 5px;">プリセット</label>
-        <select id="presetSelector" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary);">
-          <option value="default">デフォルト</option>
-          <option value="dark">ダーク</option>
-          <option value="light">ライト</option>
-          <option value="watercolor">水彩</option>
-          <option value="sunset">サンセット</option>
-          <option value="forest">フォレスト</option>
-          <option value="purple">パープル</option>
-          <option value="ocean">オーシャン</option>
-          <option value="warm">ウォーム</option>
-          <option value="cool">クール</option>
-          <option value="pastel">パステル</option>
-          <option value="neon">ネオン</option>
-        </select>
-      </div>
-
-      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <div style="flex: 1;">
-          <label>色1</label>
-          <input type="color" id="palette0" value="#667eea" style="width: 100%; height: 50px; border: 2px solid var(--border); border-radius: 4px; cursor: pointer;">
+    <div class="layout">
+      <!-- メインパネル（プレビュー＆グリッド） -->
+      <div class="main-panel">
+        <div class="controls">
+          <button onclick="updatePreview()">プレビュー更新</button>
+          <button onclick="copyUrl()" class="secondary">URLコピー</button>
+          <button onclick="randomColors()" class="secondary">ランダム</button>
+          <button onclick="toggleDarkMode()" id="darkModeBtn" class="secondary">🌙</button>
         </div>
-        <div style="flex: 1;">
-          <label>色2</label>
-          <input type="color" id="palette1" value="#764ba2" style="width: 100%; height: 50px; border: 2px solid var(--border); border-radius: 4px; cursor: pointer;">
+
+        <div class="preview">
+          <img id="preview" src="/image" alt="Preview">
         </div>
-        <div style="flex: 1;">
-          <label>色3</label>
-          <input type="color" id="palette2" value="#8b5cf6" style="width: 100%; height: 50px; border: 2px solid var(--border); border-radius: 4px; cursor: pointer;">
+
+        <div id="generationTime"></div>
+
+        <div class="section">
+          <h3>グリッド編集（6x4）</h3>
+          <div class="grid" id="colorGrid"></div>
+        </div>
+
+        <div class="section">
+          <h3>生成URL</h3>
+          <input type="text" id="urlOutput" class="url-output" readonly>
         </div>
       </div>
-      <button onclick="randomizePalette()" style="width: 100%;">パレットをランダム化</button>
-    </div>
 
-    <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 4px;">
-      <h3 style="margin-bottom: 10px;">ディスプレイスメント（歪み）</h3>
-      <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-        <input type="checkbox" id="displacementEnabled" checked>
-        有効化
-      </label>
-      <div style="margin-bottom: 10px;">
-        <label>周波数（低いほど大きな歪み）</label>
-        <input type="range" id="frequency" min="0.0001" max="0.01" step="0.0001" value="0.0012" style="width: 100%;">
-        <div id="freqLabel" style="font-size: 12px; color: var(--text-secondary);">0.0012</div>
+      <!-- サイドパネル（コントロール） -->
+      <div class="side-panel">
+        <div class="section">
+          <h3>プリセット</h3>
+          <div class="form-group">
+            <select id="presetSelector">
+              <option value="default">デフォルト</option>
+              <option value="dark">ダーク</option>
+              <option value="light">ライト</option>
+              <option value="watercolor">水彩</option>
+              <option value="sunset">サンセット</option>
+              <option value="forest">フォレスト</option>
+              <option value="purple">パープル</option>
+              <option value="ocean">オーシャン</option>
+              <option value="warm">ウォーム</option>
+              <option value="cool">クール</option>
+              <option value="pastel">パステル</option>
+              <option value="neon">ネオン</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>カラーパレット</h3>
+          <div class="palette-colors">
+            <div class="color-picker">
+              <label>色1</label>
+              <input type="color" id="palette0" value="#667eea">
+            </div>
+            <div class="color-picker">
+              <label>色2</label>
+              <input type="color" id="palette1" value="#764ba2">
+            </div>
+            <div class="color-picker">
+              <label>色3</label>
+              <input type="color" id="palette2" value="#8b5cf6">
+            </div>
+          </div>
+          <button onclick="randomizePalette()" style="width: 100%;">ランダム化</button>
+        </div>
+
+        <div class="section">
+          <h3>ディスプレイスメント</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" id="displacementEnabled" checked>
+            有効化
+          </label>
+          <div class="form-group">
+            <label>周波数</label>
+            <input type="range" id="frequency" min="0.0001" max="0.01" step="0.0001" value="0.0012">
+            <div id="freqLabel" class="range-value">0.0012</div>
+          </div>
+          <div class="form-group">
+            <label>振幅</label>
+            <input type="range" id="amplitude" min="0" max="200" step="5" value="125">
+            <div id="ampLabel" class="range-value">125</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>グレイン</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" id="grainEnabled" checked>
+            有効化
+          </label>
+          <div class="form-group">
+            <label>強さ</label>
+            <input type="range" id="grainIntensity" min="0" max="0.5" step="0.01" value="0.15">
+            <div id="grainLabel" class="range-value">0.15</div>
+          </div>
+        </div>
       </div>
-      <div>
-        <label>振幅（歪みの強さ）</label>
-        <input type="range" id="amplitude" min="0" max="200" step="5" value="125" style="width: 100%;">
-        <div id="ampLabel" style="font-size: 12px; color: var(--text-secondary);">125</div>
-      </div>
-    </div>
-
-    <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 4px;">
-      <h3 style="margin-bottom: 10px;">グレイン（ざらざら感）</h3>
-      <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-        <input type="checkbox" id="grainEnabled" checked>
-        有効化
-      </label>
-      <div>
-        <label>強さ</label>
-        <input type="range" id="grainIntensity" min="0" max="0.5" step="0.01" value="0.15" style="width: 100%;">
-        <div id="grainLabel" style="font-size: 12px; color: var(--text-secondary);">0.15</div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button onclick="updatePreview()">プレビュー更新</button>
-      <button onclick="copyUrl()">URLをコピー</button>
-      <button onclick="randomColors()">ランダムグリッド</button>
-      <button onclick="toggleDarkMode()" id="darkModeBtn">ダークモード</button>
-    </div>
-
-    <div class="preview">
-      <img id="preview" src="/image" alt="Preview">
-    </div>
-
-    <div id="generationTime"></div>
-
-    <div class="grid" id="colorGrid"></div>
-
-    <div class="url-output">
-      <h3 style="margin-bottom: 10px;">生成URL</h3>
-      <input type="text" id="urlOutput" readonly>
     </div>
   </div>
 
@@ -482,17 +600,14 @@ app.get('/editor', (c) => {
       for (let row = 0; row < 4; row++) {
         for (let col = 0; col < 6; col++) {
           const div = document.createElement('div');
-          div.className = 'color-input';
+          div.className = 'grid-cell';
 
           // 色選択（0-2）
           const colorSelect = document.createElement('select');
-          colorSelect.style.width = '100%';
-          colorSelect.style.padding = '5px';
-          colorSelect.style.marginBottom = '5px';
           for (let i = 0; i < 3; i++) {
             const option = document.createElement('option');
             option.value = i;
-            option.textContent = \`色\${i + 1}\`;
+            option.textContent = \`\${i + 1}\`;
             option.style.background = palette[i];
             option.style.color = 'white';
             if (i === grid[row][col].colorIndex) {
@@ -510,24 +625,12 @@ app.get('/editor', (c) => {
           influenceSlider.min = '0';
           influenceSlider.max = '100';
           influenceSlider.value = (grid[row][col].influence * 100).toString();
-          influenceSlider.style.width = '100%';
           influenceSlider.addEventListener('input', (e) => {
             grid[row][col].influence = parseInt(e.target.value) / 100;
-            influenceLabel.textContent = \`影響度: \${(grid[row][col].influence * 100).toFixed(0)}%\`;
           });
-
-          const influenceLabel = document.createElement('div');
-          influenceLabel.className = 'label';
-          influenceLabel.textContent = \`影響度: \${(grid[row][col].influence * 100).toFixed(0)}%\`;
-
-          const posLabel = document.createElement('div');
-          posLabel.className = 'label';
-          posLabel.textContent = \`[\${row},\${col}]\`;
 
           div.appendChild(colorSelect);
           div.appendChild(influenceSlider);
-          div.appendChild(influenceLabel);
-          div.appendChild(posLabel);
           gridElement.appendChild(div);
         }
       }
@@ -617,7 +720,7 @@ app.get('/editor', (c) => {
       const currentTheme = document.documentElement.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', newTheme);
-      document.getElementById('darkModeBtn').textContent = newTheme === 'dark' ? 'ライトモード' : 'ダークモード';
+      document.getElementById('darkModeBtn').textContent = newTheme === 'dark' ? '☀️' : '🌙';
       localStorage.setItem('theme', newTheme);
     }
 
@@ -693,7 +796,7 @@ app.get('/editor', (c) => {
     // ダークモードの初期化
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('darkModeBtn').textContent = savedTheme === 'dark' ? 'ライトモード' : 'ダークモード';
+    document.getElementById('darkModeBtn').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
   </script>
 </body>
 </html>
