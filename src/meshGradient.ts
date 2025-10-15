@@ -1,4 +1,5 @@
-import { encode } from 'fast-png'
+import { encode as encodePNG } from 'fast-png'
+import { encode as encodeJPEG } from 'jpeg-js'
 import { createNoise2D } from 'simplex-noise'
 
 export interface GridPoint {
@@ -24,11 +25,11 @@ export interface MeshGradientOptions {
 }
 
 /**
- * メッシュグラデーション画像をPNGで生成
+ * メッシュグラデーション画像をJPEGで生成
  * グリッドサイズ: 6x4 (横6列、縦4行)
  * ピクセルシェーダー方式: 各ピクセルの色を計算
  */
-export function generateMeshGradientPNG(options: MeshGradientOptions): Uint8Array {
+export function generateMeshGradientJPEG(options: MeshGradientOptions, quality = 85): Uint8Array {
   const { width, height, colors, grid, displacement, grain } = options
 
   const timings: Record<string, number> = {}
@@ -128,16 +129,23 @@ export function generateMeshGradientPNG(options: MeshGradientOptions): Uint8Arra
   timings.colorCalc = colorCalcTime
   timings.grain = grainTime
 
-  // PNGにエンコード
+  // JPEGにエンコード (RGBAからRGBに変換)
   startTime = performance.now()
-  const result = encode({
+  const rgbData = new Uint8Array(width * height * 4)
+  for (let i = 0; i < width * height; i++) {
+    rgbData[i * 4] = data[i * 4]     // R
+    rgbData[i * 4 + 1] = data[i * 4 + 1] // G
+    rgbData[i * 4 + 2] = data[i * 4 + 2] // B
+    rgbData[i * 4 + 3] = 255         // A (JPEG用に必須)
+  }
+
+  const result = encodeJPEG({
     width,
     height,
-    data,
-    depth: 8,
-    channels: 4
-  })
-  timings.pngEncode = performance.now() - startTime
+    data: rgbData,
+    quality
+  }, quality).data
+  timings.jpegEncode = performance.now() - startTime
 
   console.log('=== Performance Breakdown ===')
   console.log(`Setup: ${timings.setup.toFixed(2)}ms`)
@@ -146,7 +154,7 @@ export function generateMeshGradientPNG(options: MeshGradientOptions): Uint8Arra
   console.log(`  - Displacement: ${timings.displacement.toFixed(2)}ms`)
   console.log(`  - Color Calc: ${timings.colorCalc.toFixed(2)}ms`)
   console.log(`  - Grain: ${timings.grain.toFixed(2)}ms`)
-  console.log(`PNG Encode: ${timings.pngEncode.toFixed(2)}ms`)
+  console.log(`JPEG Encode: ${timings.jpegEncode.toFixed(2)}ms`)
   console.log(`Total: ${Object.values(timings).reduce((a, b) => a + b, 0).toFixed(2)}ms`)
 
   return result

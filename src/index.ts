@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { generateMeshGradientPNG } from './meshGradient'
-import { generateMeshGradientPNGWasm } from './meshGradientWasm'
+import { generateMeshGradientJPEG } from './meshGradient'
+import { generateMeshGradientJPEGWasm } from './meshGradientWasm'
 import { generateCacheKey, getCachedImage, setCachedImage } from './cache'
 // @ts-ignore - WASM module import
 import wasmModule from '../build/release.wasm'
@@ -885,23 +885,23 @@ app.get('/image', async (c) => {
     })
   }
 
-  // PNG画像を生成
+  // JPEG画像を生成
   try {
-    const pngBuffer = generateMeshGradientPNG({
+    const jpegBuffer = generateMeshGradientJPEG({
       width,
       height,
       colors,
       grid,
       displacement: displacement.enabled ? displacement : undefined,
       grain: grain.enabled ? grain : undefined
-    })
+    }, 85) // 品質85%
 
     // R2にキャッシュ
-    await setCachedImage(bucket, cacheKey, Buffer.from(pngBuffer))
+    await setCachedImage(bucket, cacheKey, Buffer.from(jpegBuffer))
 
-    return new Response(pngBuffer, {
+    return new Response(jpegBuffer, {
       headers: {
-        'Content-Type': 'image/png',
+        'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000'
       }
     })
@@ -954,20 +954,20 @@ app.get('/image-wasm', async (c) => {
     }
   }
 
-  // PNG画像を生成（WASM版）
+  // JPEG画像を生成（WASM版）
   try {
-    const pngBuffer = await generateMeshGradientPNGWasm(wasmModule, {
+    const jpegBuffer = await generateMeshGradientJPEGWasm(wasmModule, {
       width,
       height,
       colors,
       grid,
       displacement: displacement.enabled ? displacement : undefined,
       grain: grain.enabled ? grain : undefined
-    })
+    }, 85) // 品質85%
 
-    return new Response(pngBuffer, {
+    return new Response(jpegBuffer, {
       headers: {
-        'Content-Type': 'image/png',
+        'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000'
       }
     })

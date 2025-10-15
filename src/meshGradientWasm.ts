@@ -1,4 +1,5 @@
-import { encode } from 'fast-png'
+import { encode as encodePNG } from 'fast-png'
+import { encode as encodeJPEG } from 'jpeg-js'
 import type { GridPoint } from './meshGradient'
 
 export interface MeshGradientWasmOptions {
@@ -18,11 +19,12 @@ export interface MeshGradientWasmOptions {
 }
 
 /**
- * WASM版メッシュグラデーション画像をPNGで生成（完全版）
+ * WASM版メッシュグラデーション画像をJPEGで生成（完全版）
  */
-export async function generateMeshGradientPNGWasm(
+export async function generateMeshGradientJPEGWasm(
   wasmModule: WebAssembly.Module,
-  options: MeshGradientWasmOptions
+  options: MeshGradientWasmOptions,
+  quality = 85
 ): Promise<Uint8Array> {
   const { width, height, colors, grid, displacement, grain } = options
 
@@ -115,18 +117,17 @@ export async function generateMeshGradientPNGWasm(
   const wasmTime = performance.now() - startTime
   console.log(`WASM generation time: ${wasmTime.toFixed(2)}ms`)
 
-  // PNGにエンコード
+  // JPEGにエンコード
   const encodeStart = performance.now()
-  const result = encode({
+  const result = encodeJPEG({
     width,
     height,
     data: pixelData,
-    depth: 8,
-    channels: 4
-  })
+    quality
+  }, quality).data
   const encodeTime = performance.now() - encodeStart
 
-  console.log(`PNG encode time: ${encodeTime.toFixed(2)}ms`)
+  console.log(`JPEG encode time: ${encodeTime.toFixed(2)}ms`)
   console.log(`Total time: ${(wasmTime + encodeTime).toFixed(2)}ms`)
 
   exports.freeBuffer(gridPtr)
