@@ -2,10 +2,16 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hono-image-placeholder",
   "main": "src/index.ts",
-  "compatibility_date": "2025-10-15"
-  // "compatibility_flags": [
-  //   "nodejs_compat"
-  // ],
+  "compatibility_date": "2025-10-15",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGE_CACHE",
+      "bucket_name": "image-placeholder-cache"
+    }
+  ],
   // "vars": {
   //   "MY_VAR": "my-variable"
   // },
@@ -13,12 +19,6 @@
   //   {
   //     "binding": "MY_KV_NAMESPACE",
   //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
   //   }
   // ],
   // "d1_databases": [
