@@ -989,6 +989,8 @@ app.get('/image', async (c) => {
 
 // WASM版画像生成エンドポイント（完全版）
 app.get('/image-wasm', async (c) => {
+  const bucket = c.env.IMAGE_CACHE
+
   // URLパラメータを取得
   const params = c.req.query()
   const width = parseInt(params.width || '1920')
@@ -1047,6 +1049,40 @@ app.get('/image-wasm', async (c) => {
     }
   }
 
+  // キャッシュキーを生成
+  const searchParams = new URLSearchParams()
+  searchParams.set('width', width.toString())
+  searchParams.set('height', height.toString())
+  searchParams.set('color0', colors[0])
+  searchParams.set('color1', colors[1])
+  searchParams.set('color2', colors[2])
+  searchParams.set('displacement', displacement.enabled.toString())
+  searchParams.set('freq', displacement.frequency.toString())
+  searchParams.set('amp', displacement.amplitude.toString())
+  searchParams.set('grain', grain.enabled.toString())
+  searchParams.set('grainIntensity', grain.intensity.toString())
+  searchParams.set('gridCols', gridCols.toString())
+  searchParams.set('gridRows', gridRows.toString())
+  searchParams.set('wasm', 'true') // WASM版であることを示す
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      searchParams.set(`g_${row}_${col}_c`, grid[row][col].colorIndex.toString())
+      searchParams.set(`g_${row}_${col}_i`, grid[row][col].influence.toString())
+    }
+  }
+  const cacheKey = generateCacheKey(searchParams)
+
+  // キャッシュをチェック
+  const cached = await getCachedImage(bucket, cacheKey)
+  if (cached) {
+    return new Response(cached, {
+      headers: {
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=31536000'
+      }
+    })
+  }
+
   // JPEG画像を生成（WASM版）
   try {
     const jpegBuffer = await generateMeshGradientJPEGWasm(wasmModule, {
@@ -1057,6 +1093,9 @@ app.get('/image-wasm', async (c) => {
       displacement: displacement.enabled ? displacement : undefined,
       grain: grain.enabled ? grain : undefined
     }, 85) // 品質85%
+
+    // R2にキャッシュ
+    await setCachedImage(bucket, cacheKey, Buffer.from(jpegBuffer))
 
     return new Response(jpegBuffer, {
       headers: {
