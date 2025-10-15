@@ -332,6 +332,20 @@ app.get('/editor', (c) => {
       <!-- サイドパネル（コントロール） -->
       <div class="side-panel">
         <div class="section">
+          <h3>レンダリングモード</h3>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="radio" name="renderMode" value="js" checked>
+              JavaScript版（安定）
+            </label>
+            <label class="checkbox-label">
+              <input type="radio" name="renderMode" value="wasm">
+              WASM版（実験的・高速）
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
           <h3>プリセット</h3>
           <div class="form-group">
             <select id="presetSelector">
@@ -651,7 +665,12 @@ app.get('/editor', (c) => {
           params.set(\`g_\${row}_\${col}_i\`, grid[row][col].influence.toString());
         }
       }
-      return \`\${location.origin}/image?\${params.toString()}\`;
+
+      // レンダリングモードに応じてエンドポイントを切り替え
+      const renderMode = document.querySelector('input[name="renderMode"]:checked').value;
+      const endpoint = renderMode === 'wasm' ? '/image-wasm' : '/image';
+
+      return \`\${location.origin}\${endpoint}?\${params.toString()}\`;
     }
 
     // プレビューを更新
@@ -775,6 +794,13 @@ app.get('/editor', (c) => {
       updatePreview();
     });
 
+    // レンダリングモード切り替えの監視（自動プレビュー更新）
+    document.querySelectorAll('input[name="renderMode"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        updatePreview();
+      });
+    });
+
     // 初期化
     updatePreview();
   </script>
@@ -885,7 +911,7 @@ app.get('/image', async (c) => {
   }
 })
 
-// WASM版画像生成エンドポイント（テスト用）
+// WASM版画像生成エンドポイント（完全版）
 app.get('/image-wasm', async (c) => {
   // URLパラメータを取得
   const params = c.req.query()
@@ -899,10 +925,33 @@ app.get('/image-wasm', async (c) => {
     params.color2 || DEFAULT_PALETTE[2]
   ]
 
+  // ディスプレイスメント設定
+  const displacement = {
+    enabled: params.displacement !== 'false', // デフォルトON
+    frequency: parseFloat(params.freq || '0.0012'),
+    amplitude: parseFloat(params.amp || '125')
+  }
+
   // グレイン設定
   const grain = {
-    enabled: params.grain !== 'false',
+    enabled: params.grain !== 'false', // デフォルトON
     intensity: parseFloat(params.grainIntensity || '0.04')
+  }
+
+  // グリッドを解析（g_0_0_c=0&g_0_0_i=0.8 の形式）
+  const grid: GridPoint[][] = []
+  for (let row = 0; row < 4; row++) {
+    grid[row] = []
+    for (let col = 0; col < 6; col++) {
+      const colorIndexKey = `g_${row}_${col}_c`
+      const influenceKey = `g_${row}_${col}_i`
+
+      const defaultPoint = DEFAULT_GRID[row][col]
+      grid[row][col] = {
+        colorIndex: parseInt(params[colorIndexKey] || defaultPoint.colorIndex.toString()),
+        influence: parseFloat(params[influenceKey] || defaultPoint.influence.toString())
+      }
+    }
   }
 
   // PNG画像を生成（WASM版）
@@ -911,6 +960,8 @@ app.get('/image-wasm', async (c) => {
       width,
       height,
       colors,
+      grid,
+      displacement: displacement.enabled ? displacement : undefined,
       grain: grain.enabled ? grain : undefined
     })
 
