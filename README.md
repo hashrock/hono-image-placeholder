@@ -1,21 +1,14 @@
-```txt
-npm install
-npm run dev
-```
+画像プレースホルダ作成サービス
 
-```txt
-npm run deploy
-```
+hono + Cloudflare workers で作ります。
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
+機能
 
-```txt
-npm run cf-typegen
-```
-
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
+- メッシュグラデーション背景画像を作るアプリ
+- サーバサイドで描画する
+- URL パラメータで各座標や色を渡す
+- 一度作った画像はストレージにキャッシュ
+  - 外部サービスから URL を直接呼ばれる想定
+- /editor で編集 UI
+- img の url を書き換えて表示する
+- 最終的に URL をコピーできる
