@@ -31,6 +31,9 @@ export interface MeshGradientOptions {
 export function generateMeshGradientPNG(options: MeshGradientOptions): Uint8Array {
   const { width, height, colors, grid, displacement, grain } = options
 
+  const timings: Record<string, number> = {}
+  let startTime = performance.now()
+
   // グリッドサイズの検証
   if (!grid || grid.length !== 4 || grid.some(row => !row || row.length !== 6)) {
     console.error('Invalid grid:', grid)
@@ -39,31 +42,52 @@ export function generateMeshGradientPNG(options: MeshGradientOptions): Uint8Arra
 
   // 3色をRGBに変換
   const palette: RGB[] = colors.map(hexToRgb)
+  timings.setup = performance.now() - startTime
 
-  // ノイズ関数の初期化（ディスプレイスメント用）
-  let noise2D: ((x: number, y: number) => number) | null = null
+  // ノイズマップの事前計算（低解像度）
+  startTime = performance.now()
+  const noiseScale = 4 // 1/4解像度でノイズマップを生成
+  const noiseWidth = Math.ceil(width / noiseScale)
+  const noiseHeight = Math.ceil(height / noiseScale)
+
+  let displacementMapX: Float32Array | null = null
+  let displacementMapY: Float32Array | null = null
   if (displacement?.enabled) {
-    noise2D = createNoise2D()
+    const noise2D = createNoise2D()
+    displacementMapX = new Float32Array(noiseWidth * noiseHeight)
+    displacementMapY = new Float32Array(noiseHeight * noiseWidth)
+
+    for (let y = 0; y < noiseHeight; y++) {
+      for (let x = 0; x < noiseWidth; x++) {
+        const realX = x * noiseScale
+        const realY = y * noiseScale
+        const idx = y * noiseWidth + x
+        displacementMapX[idx] = noise2D(realX * displacement.frequency, realY * displacement.frequency)
+        displacementMapY[idx] = noise2D((realX + 1000) * displacement.frequency, (realY + 1000) * displacement.frequency)
+      }
+    }
   }
 
-  // グレイン用の高周波ノイズ
-  let grainNoise: ((x: number, y: number) => number) | null = null
-  if (grain?.enabled) {
-    grainNoise = createNoise2D()
-  }
+  timings.noiseInit = performance.now() - startTime
 
   // ピクセルデータを作成 (RGBA)
   const data = new Uint8Array(width * height * 4)
+
+  startTime = performance.now()
+  let displacementTime = 0
+  let colorCalcTime = 0
+  let grainTime = 0
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       let sampleX = x
       let sampleY = y
 
-      // ディスプレイスメントマップを適用
-      if (displacement?.enabled && noise2D) {
-        const noiseX = noise2D(x * displacement.frequency, y * displacement.frequency)
-        const noiseY = noise2D((x + 1000) * displacement.frequency, (y + 1000) * displacement.frequency)
+      // ディスプレイスメントマップを適用（低解像度マップから補間）
+      if (displacement?.enabled && displacementMapX && displacementMapY) {
+        const dispStart = performance.now()
+        const noiseX = sampleNoiseMap(displacementMapX, x, y, noiseWidth, noiseHeight, noiseScale)
+        const noiseY = sampleNoiseMap(displacementMapY, x, y, noiseWidth, noiseHeight, noiseScale)
 
         sampleX = x + noiseX * displacement.amplitude
         sampleY = y + noiseY * displacement.amplitude
@@ -71,21 +95,25 @@ export function generateMeshGradientPNG(options: MeshGradientOptions): Uint8Arra
         // 範囲外にならないようクランプ
         sampleX = Math.max(0, Math.min(width - 1, sampleX))
         sampleY = Math.max(0, Math.min(height - 1, sampleY))
+        displacementTime += performance.now() - dispStart
       }
 
+      const colorStart = performance.now()
       const color = getPixelColor(sampleX, sampleY, width, height, grid, palette)
+      colorCalcTime += performance.now() - colorStart
 
-      // グレインテクスチャを適用
+      // グレインテクスチャを適用（高速ハッシュノイズ）
       let r = color.r
       let g = color.g
       let b = color.b
 
-      if (grain?.enabled && grainNoise) {
-        // 高周波ノイズでざらざら感を出す
-        const grainValue = grainNoise(x * 0.5, y * 0.5) * grain.intensity * 255
+      if (grain?.enabled) {
+        const grainStart = performance.now()
+        const grainValue = fastNoise(x, y) * grain.intensity * 255
         r = Math.max(0, Math.min(255, r + grainValue))
         g = Math.max(0, Math.min(255, g + grainValue))
         b = Math.max(0, Math.min(255, b + grainValue))
+        grainTime += performance.now() - grainStart
       }
 
       const index = (y * width + x) * 4
@@ -95,15 +123,88 @@ export function generateMeshGradientPNG(options: MeshGradientOptions): Uint8Arra
       data[index + 3] = 255 // アルファ値は常に不透明
     }
   }
+  timings.pixelLoop = performance.now() - startTime
+  timings.displacement = displacementTime
+  timings.colorCalc = colorCalcTime
+  timings.grain = grainTime
 
   // PNGにエンコード
-  return encode({
+  startTime = performance.now()
+  const result = encode({
     width,
     height,
     data,
     depth: 8,
     channels: 4
   })
+  timings.pngEncode = performance.now() - startTime
+
+  console.log('=== Performance Breakdown ===')
+  console.log(`Setup: ${timings.setup.toFixed(2)}ms`)
+  console.log(`Noise Init: ${timings.noiseInit.toFixed(2)}ms`)
+  console.log(`Pixel Loop Total: ${timings.pixelLoop.toFixed(2)}ms`)
+  console.log(`  - Displacement: ${timings.displacement.toFixed(2)}ms`)
+  console.log(`  - Color Calc: ${timings.colorCalc.toFixed(2)}ms`)
+  console.log(`  - Grain: ${timings.grain.toFixed(2)}ms`)
+  console.log(`PNG Encode: ${timings.pngEncode.toFixed(2)}ms`)
+  console.log(`Total: ${Object.values(timings).reduce((a, b) => a + b, 0).toFixed(2)}ms`)
+
+  return result
+}
+
+/**
+ * 高速ハッシュベースのノイズ関数（グレイン用）
+ * -1.0 から 1.0 の範囲の値を返す
+ */
+function fastNoise(x: number, y: number): number {
+  // 整数座標に変換
+  const ix = Math.floor(x * 0.5) // 0.5をかけて少し滑らかに
+  const iy = Math.floor(y * 0.5)
+
+  // ハッシュ関数（整数のみの演算で高速）
+  let hash = ix * 374761393 + iy * 668265263
+  hash = (hash ^ (hash >>> 13)) * 1274126177
+  hash = hash ^ (hash >>> 16)
+
+  // -1.0 から 1.0 の範囲に正規化
+  return ((hash & 0x7FFFFFFF) / 0x7FFFFFFF) * 2.0 - 1.0
+}
+
+/**
+ * 低解像度ノイズマップから値をバイリニア補間でサンプリング
+ */
+function sampleNoiseMap(
+  noiseMap: Float32Array,
+  x: number,
+  y: number,
+  mapWidth: number,
+  mapHeight: number,
+  scale: number
+): number {
+  // ノイズマップ座標に変換
+  const mapX = x / scale
+  const mapY = y / scale
+
+  // グリッド位置
+  const x0 = Math.floor(mapX)
+  const y0 = Math.floor(mapY)
+  const x1 = Math.min(x0 + 1, mapWidth - 1)
+  const y1 = Math.min(y0 + 1, mapHeight - 1)
+
+  // 補間係数
+  const tx = mapX - x0
+  const ty = mapY - y0
+
+  // 4点の値を取得
+  const v00 = noiseMap[y0 * mapWidth + x0]
+  const v10 = noiseMap[y0 * mapWidth + x1]
+  const v01 = noiseMap[y1 * mapWidth + x0]
+  const v11 = noiseMap[y1 * mapWidth + x1]
+
+  // バイリニア補間
+  const v0 = v00 + (v10 - v00) * tx
+  const v1 = v01 + (v11 - v01) * tx
+  return v0 + (v1 - v0) * ty
 }
 
 /**
