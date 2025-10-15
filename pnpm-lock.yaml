@@ -21,6 +21,9 @@ importers:
       '@types/node':
         specifier: ^24.7.2
         version: 24.7.2
+      assemblyscript:
+        specifier: ^0.28.8
+        version: 0.28.8
       wrangler:
         specifier: ^4.4.0
         version: 4.43.0
@@ -373,6 +376,15 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  assemblyscript@0.28.8:
+    resolution: {integrity: sha512-RtnvzuplmvWeOlYLgjb61jE/Uvj0LYxQ8KxfO+ARu2zOH69NNnS4gfSRDSq0CbM1qZw91kVd7QKmGZFxUlfQ8g==}
+    engines: {node: '>=20', npm: '>=10'}
+    hasBin: true
+
+  binaryen@123.0.0-nightly.20250530:
+    resolution: {integrity: sha512-d1zPHBN5YlOd3Ff+OUxvVExuFeh8heSnqe+X3bjItFxGLvn4VGBKmrvv7pgy/cRhrIUGuPW138iaWfDhwjyDqg==}
+    hasBin: true
+
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
 
@@ -440,6 +452,9 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  long@5.3.2:
+    resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
 
   mime@3.0.0:
     resolution: {integrity: sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A==}
@@ -759,6 +774,13 @@ snapshots:
 
   acorn@8.14.0: {}
 
+  assemblyscript@0.28.8:
+    dependencies:
+      binaryen: 123.0.0-nightly.20250530
+      long: 5.3.2
+
+  binaryen@123.0.0-nightly.20250530: {}
+
   blake3-wasm@2.1.5: {}
 
   color-convert@2.0.1:
@@ -835,6 +857,8 @@ snapshots:
   is-arrayish@0.3.4: {}
 
   kleur@4.1.5: {}
+
+  long@5.3.2: {}
 
   mime@3.0.0: {}
 

@@ -34,11 +34,27 @@ hono + Cloudflare workers で作ります。
 # 依存関係のインストール
 pnpm install
 
+# WASM ビルド (初回のみ)
+pnpm asbuild
+
 # 開発サーバー起動
 pnpm dev
 ```
 
 開発サーバーが起動したら、`http://localhost:8787/editor` でエディタUIにアクセスできます。
+
+### WASM版 (実験的)
+
+AssemblyScriptでコンパイルされたWASM版が利用可能です：
+
+- エンドポイント: `/image-wasm`
+- パフォーマンス: JavaScript版の**約6倍高速** (FHD 1920x1080で132ms vs 787ms)
+- 制限事項: 現在は簡略版実装（単色+グレインのみ、グリッド・ディスプレイスメント未実装）
+
+```bash
+# WASM版でテスト
+curl "http://localhost:8787/image-wasm?width=1920&height=1080" -o test.png
+```
 
 ## デプロイ
 

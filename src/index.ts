@@ -1,6 +1,9 @@
 import { Hono } from 'hono'
 import { generateMeshGradientPNG } from './meshGradient'
+import { generateMeshGradientPNGWasm } from './meshGradientWasm'
 import { generateCacheKey, getCachedImage, setCachedImage } from './cache'
+// @ts-ignore - WASM module import
+import wasmModule from '../build/release.wasm'
 
 type Bindings = CloudflareBindings
 
@@ -879,6 +882,47 @@ app.get('/image', async (c) => {
   } catch (error) {
     console.error('Error generating image:', error)
     return c.text('Error generating image', 500)
+  }
+})
+
+// WASM版画像生成エンドポイント（テスト用）
+app.get('/image-wasm', async (c) => {
+  // URLパラメータを取得
+  const params = c.req.query()
+  const width = parseInt(params.width || '1920')
+  const height = parseInt(params.height || '1080')
+
+  // 3色パレットを解析
+  const colors: [string, string, string] = [
+    params.color0 || DEFAULT_PALETTE[0],
+    params.color1 || DEFAULT_PALETTE[1],
+    params.color2 || DEFAULT_PALETTE[2]
+  ]
+
+  // グレイン設定
+  const grain = {
+    enabled: params.grain !== 'false',
+    intensity: parseFloat(params.grainIntensity || '0.04')
+  }
+
+  // PNG画像を生成（WASM版）
+  try {
+    const pngBuffer = await generateMeshGradientPNGWasm(wasmModule, {
+      width,
+      height,
+      colors,
+      grain: grain.enabled ? grain : undefined
+    })
+
+    return new Response(pngBuffer, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=31536000'
+      }
+    })
+  } catch (error) {
+    console.error('Error generating WASM image:', error)
+    return c.text('Error generating WASM image', 500)
   }
 })
 
