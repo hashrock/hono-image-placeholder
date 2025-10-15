@@ -69,15 +69,6 @@ app.get('/editor', (c) => {
       --border: #ddd;
     }
 
-    [data-theme="dark"] {
-      --bg-primary: #1e1e1e;
-      --bg-secondary: #2a2a2a;
-      --bg-page: #121212;
-      --text-primary: #e0e0e0;
-      --text-secondary: #a0a0a0;
-      --border: #444;
-    }
-
     * {
       box-sizing: border-box;
       margin: 0;
@@ -321,7 +312,6 @@ app.get('/editor', (c) => {
           <button onclick="updatePreview()">プレビュー更新</button>
           <button onclick="copyUrl()" class="secondary">URLコピー</button>
           <button onclick="randomColors()" class="secondary">ランダム</button>
-          <button onclick="toggleDarkMode()" id="darkModeBtn" class="secondary">🌙</button>
         </div>
 
         <div class="preview">
@@ -329,11 +319,6 @@ app.get('/editor', (c) => {
         </div>
 
         <div id="generationTime"></div>
-
-        <div class="section">
-          <h3>グリッド編集（6x4）</h3>
-          <div class="grid" id="colorGrid"></div>
-        </div>
 
         <div class="section">
           <h3>生成URL</h3>
@@ -408,8 +393,8 @@ app.get('/editor', (c) => {
           </label>
           <div class="form-group">
             <label>強さ</label>
-            <input type="range" id="grainIntensity" min="0" max="0.5" step="0.01" value="0.15">
-            <div id="grainLabel" class="range-value">0.15</div>
+            <input type="range" id="grainIntensity" min="0" max="0.5" step="0.01" value="0.04">
+            <div id="grainLabel" class="range-value">0.04</div>
           </div>
         </div>
       </div>
@@ -698,7 +683,6 @@ app.get('/editor', (c) => {
         document.getElementById('palette1').value = palette[1];
         document.getElementById('palette2').value = palette[2];
 
-        initColorGrid();
         updatePreview();
       }
     }
@@ -713,15 +697,6 @@ app.get('/editor', (c) => {
         return Math.round(255 * color).toString(16).padStart(2, '0');
       };
       return \`#\${f(0)}\${f(8)}\${f(4)}\`;
-    }
-
-    // ダークモード切り替え
-    function toggleDarkMode() {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      document.getElementById('darkModeBtn').textContent = newTheme === 'dark' ? '☀️' : '🌙';
-      localStorage.setItem('theme', newTheme);
     }
 
     // URLをコピー
@@ -757,46 +732,48 @@ app.get('/editor', (c) => {
         document.getElementById('palette1').value = palette[1];
         document.getElementById('palette2').value = palette[2];
 
-        initColorGrid();
         updatePreview();
       }
     });
 
-    // パレットカラー変更イベント
+    // パレットカラー変更イベント（自動プレビュー更新）
     document.getElementById('palette0').addEventListener('input', (e) => {
       palette[0] = e.target.value;
-      initColorGrid();
+      updatePreview();
     });
     document.getElementById('palette1').addEventListener('input', (e) => {
       palette[1] = e.target.value;
-      initColorGrid();
+      updatePreview();
     });
     document.getElementById('palette2').addEventListener('input', (e) => {
       palette[2] = e.target.value;
-      initColorGrid();
+      updatePreview();
     });
 
-    // ディスプレイスメント設定の監視
+    // ディスプレイスメント設定の監視（自動プレビュー更新）
+    document.getElementById('displacementEnabled').addEventListener('change', () => {
+      updatePreview();
+    });
     document.getElementById('frequency').addEventListener('input', (e) => {
       document.getElementById('freqLabel').textContent = e.target.value;
+      updatePreview();
     });
     document.getElementById('amplitude').addEventListener('input', (e) => {
       document.getElementById('ampLabel').textContent = e.target.value;
+      updatePreview();
     });
 
-    // グレイン設定の監視
+    // グレイン設定の監視（自動プレビュー更新）
+    document.getElementById('grainEnabled').addEventListener('change', () => {
+      updatePreview();
+    });
     document.getElementById('grainIntensity').addEventListener('input', (e) => {
       document.getElementById('grainLabel').textContent = e.target.value;
+      updatePreview();
     });
 
     // 初期化
-    initColorGrid();
     updatePreview();
-
-    // ダークモードの初期化
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    document.getElementById('darkModeBtn').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
   </script>
 </body>
 </html>
@@ -829,7 +806,7 @@ app.get('/image', async (c) => {
   // グレイン設定
   const grain = {
     enabled: params.grain !== 'false', // デフォルトON
-    intensity: parseFloat(params.grainIntensity || '0.15')
+    intensity: parseFloat(params.grainIntensity || '0.04')
   }
 
   // グリッドを解析（g_0_0_c=0&g_0_0_i=0.8 の形式）
