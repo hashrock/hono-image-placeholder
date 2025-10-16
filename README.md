@@ -1,142 +1,308 @@
-画像プレースホルダ作成サービス
+# プレースホルダ画像生成サービス
 
-hono + Cloudflare workers で作ります。
+**美しいメッシュグラデーション画像を高速生成するプレースホルダサービス**
 
-## 機能
+## 🎯 プロジェクトの目的
 
-- メッシュグラデーション背景画像を作るアプリ
-- サーバサイドで描画する
-- URL パラメータで各座標や色を渡す
-- 一度作った画像はストレージにキャッシュ
-  - 外部サービスから URL を直接呼ばれる想定
-- /editor で編集 UI
-- img の url を書き換えて表示する
-- 最終的に URL をコピーできる
+このサービスは、**プレースホルダ用の画像を動的に生成・配信する**ことを目的としています。
 
-## 仕様
+### 解決する課題
+- 開発中の画像プレースホルダの準備が面倒
+- 美しいプレースホルダ画像の作成に時間がかかる
+- 画像ファイルの管理・配信が複雑
+- 様々なサイズ・色の画像が必要
 
-### 画像生成
-- グリッドサイズ: 6×4
-- デフォルト画像サイズ: 1920×1080 (FHD)
-- 出力フォーマット: JPEG (品質85%, 高圧縮・高速)
+### 提供する価値
+- **URL発行**: パラメータを指定するだけで画像を即座に生成・配信
+- **美しいビジュアル**: アルゴリズム生成による有機的なメッシュグラデーション
+- **高速配信**: CloudFlare WorkersによるグローバルCDN配信
+- **永続キャッシュ**: 一度生成した画像はR2に保存され、再生成不要
+- **エディタ同梱**: ブラウザ上で直感的に画像をカスタマイズ可能
 
-### ストレージ
-- Cloudflare R2 を使用
-- キャッシュキー: URLパラメータのハッシュ値
+## ✨ 特徴
 
-### エディタUI
-- バニラJS で実装
-- 最低限の視覚的編集機能
+### 🚀 高速生成
+- **WASM版**: 約1秒でFHD画像生成
+- **JavaScript版**: 2秒以上で生成（重い処理）
+- CloudFlare WorkersのCPU時間課金に最適化
 
-## 開発
+### 🎨 美しいビジュアル
+- メッシュグラデーションによる有機的な色の混在
+- ディスプレイスメントマッピングで自然な歪み
+- グレインテクスチャで質感を追加
+- 12種類のカラープリセット
 
+### ⚡ 高性能アーキテクチャ
+- **WASM実装**: AssemblyScriptで最適化された高速レンダリング
+- **オブジェクトストレージキャッシュ**: CloudFlare R2で生成画像を永続化
+- **URL発行**: パラメータベースで画像を直接配信
+- **エディタ同梱**: ブラウザ上でリアルタイム編集可能
+
+## 🛠️ 技術スタック
+
+- **フレームワーク**: Hono + CloudFlare Workers
+- **画像生成**: AssemblyScript (WASM) + JavaScript
+- **ストレージ**: CloudFlare R2
+- **エディタ**: バニラJavaScript
+- **画像フォーマット**: JPEG (品質85%, 高圧縮)
+
+## 🚀 クイックスタート
+
+### 1. 依存関係のインストール
 ```bash
-# 依存関係のインストール
 pnpm install
+```
 
-# WASM ビルド (初回のみ)
+### 2. WASMビルド
+```bash
 pnpm asbuild
+```
 
-# 開発サーバー起動
+### 3. 開発サーバー起動
+```bash
 pnpm dev
 ```
 
-開発サーバーが起動したら、`http://localhost:8787/editor` でエディタUIにアクセスできます。
+### 4. エディタにアクセス
+`http://localhost:8787/editor` でビジュアルエディタを開けます。
 
-**エディタUI機能：**
-- **レンダリングモード切り替え**: JavaScript版とWASM版を選択可能
-- **リアルタイムプレビュー**: 全ての設定変更が自動的にプレビューに反映
-- **カラープリセット**: 12種類のプリセット（ダーク、ライト、水彩など）
-- **グリッド編集**: 6×4グリッドの各ポイントの色と影響度を調整
-- **ディスプレイスメント設定**: 周波数と振幅を調整
-- **グレイン設定**: テクスチャの強さを調整
-- **URL生成**: 設定を含むURLを自動生成・コピー可能
+## 📖 使用方法
 
-### WASM版 ✅
+### 🎨 エディタUI（推奨）
+`/editor` にアクセスしてブラウザ上で画像をカスタマイズ：
 
-AssemblyScriptでコンパイルされた高速WASM版が利用可能です！
+- **レンダリングモード**: WASM版（高速）またはJavaScript版を選択
+- **リアルタイムプレビュー**: 設定変更が即座に反映
+- **カラープリセット**: 12種類のプリセットから選択
+- **グリッド編集**: 6×4グリッドの各ポイントを調整
+- **URL生成**: 設定を含むURLを自動生成・コピー
 
-**実装済み機能：**
-- ✅ 完全なグリッド補間ロジック（6×4グリッド対応）
-- ✅ スムースノイズによるディスプレイスメントマッピング
-- ✅ 高速ハッシュノイズによるグレイン
-- ✅ メモリ管理（`__pin`/`__unpin`による安全な割り当て）
-- ✅ エンドツーエンドテスト（`pnpm test`）
+### 🔗 URL利用例
 
-**パフォーマンス：**
-JavaScript版と比較して**約5倍高速**
-- WASM版: ~214ms (FHD 1920×1080, JPEG出力)
-- JavaScript版: ~1072ms (同条件)
+#### 基本的な使用例
+```html
+<!-- シンプルなプレースホルダ -->
+<img src="https://your-domain.workers.dev/image-wasm?width=800&height=600" alt="Placeholder">
 
-**出力ファイルサイズ：**
-- JPEG (品質85%): **374KB** (FHD 1920×1080)
-- PNG比で**約6.7倍小さい** (2.4MB → 374KB)
-- WASM バイナリ: わずか **6KB**
-- 依存関係: なし（完全自己完結型）
+<!-- カスタムカラーのプレースホルダ -->
+<img src="https://your-domain.workers.dev/image-wasm?width=1200&height=800&color0=#ff6b6b&color1=#4ecdc4&color2=#45b7d1" alt="Custom Placeholder">
 
-**エンコード速度：**
-- JPEG: ~77-86ms
-- PNG: ~236ms (JPEG比で約3倍高速)
+<!-- 正方形のプレースホルダ -->
+<img src="https://your-domain.workers.dev/image-wasm?width=500&height=500&color0=#667eea&color1=#764ba2&color2=#8b5cf6" alt="Square Placeholder">
+```
 
-**技術的特徴：**
-- **JPEG出力**: グラデーション画像に最適な非可逆圧縮（品質85%）
-- **高速エンコード**: `jpeg-js`による軽量なJPEGエンコーディング
-- **ハッシュベースの滑らかノイズ**: SimplexNoiseの代わりにバイリニア補間＋スムースステップを使用
-- **インライン最適化**: `@inline`ディレクティブで関数呼び出しオーバーヘッドを削減
-- **StaticArray**: 固定サイズ配列でメモリアロケーションを最小化
-- **直接メモリアクセス**: `load<T>`/`store<T>`による高速メモリ操作
+#### 高度なカスタマイズ例
+```html
+<!-- ディスプレイスメントとグレインを有効化 -->
+<img src="https://your-domain.workers.dev/image-wasm?width=1920&height=1080&color0=#ff9a9e&color1=#fecfef&color2=#fecfef&displacement=true&freq=0.002&amp=200&grain=true&grainIntensity=0.1" alt="Advanced Placeholder">
 
-**使い方：**
-エディターUI (`/editor`) でレンダリングモードを「WASM版（実験的・高速）」に切り替えるだけ！
+<!-- カスタムグリッドサイズ -->
+<img src="https://your-domain.workers.dev/image-wasm?width=800&height=600&gridCols=8&gridRows=6&color0=#a8edea&color1=#fed6e3&color2=#d299c2" alt="Custom Grid Placeholder">
+```
 
-コードは`assembly/index.ts`および`src/meshGradientWasm.ts`に実装されています。
+#### レスポンシブ対応例
+```html
+<!-- レスポンシブ画像 -->
+<img src="https://your-domain.workers.dev/image-wasm?width=800&height=600&color0=#667eea&color1=#764ba2&color2=#8b5cf6" 
+     srcset="https://your-domain.workers.dev/image-wasm?width=400&height=300&color0=#667eea&color1=#764ba2&color2=#8b5cf6 400w,
+             https://your-domain.workers.dev/image-wasm?width=800&height=600&color0=#667eea&color1=#764ba2&color2=#8b5cf6 800w,
+             https://your-domain.workers.dev/image-wasm?width=1200&height=900&color0=#667eea&color1=#764ba2&color2=#8b5cf6 1200w"
+     sizes="(max-width: 600px) 400px, (max-width: 1000px) 800px, 1200px"
+     alt="Responsive Placeholder">
+```
 
-## デプロイ
+### 📋 API エンドポイント
 
-### 1. R2バケットの作成
+#### 画像生成（WASM版 - 推奨）
+```
+GET /image-wasm?width=1920&height=1080&color0=#667eea&color1=#764ba2&color2=#8b5cf6
+```
 
-まず、Cloudflare R2バケットを作成します：
+#### 画像生成（JavaScript版）
+```
+GET /image?width=1920&height=1080&color0=#667eea&color1=#764ba2&color2=#8b5cf6
+```
 
+### 🔧 パラメータ一覧
+
+| パラメータ | 説明 | デフォルト | 例 |
+|-----------|------|-----------|-----|
+| `width` | 画像の幅（px） | 1920 | `800` |
+| `height` | 画像の高さ（px） | 1080 | `600` |
+| `color0` | パレット色1 | `#667eea` | `#ff6b6b` |
+| `color1` | パレット色2 | `#764ba2` | `#4ecdc4` |
+| `color2` | パレット色3 | `#8b5cf6` | `#45b7d1` |
+| `gridCols` | グリッド列数 | 6 | `8` |
+| `gridRows` | グリッド行数 | 4 | `6` |
+| `displacement` | ディスプレイスメント有効化 | `true` | `false` |
+| `freq` | ディスプレイスメント周波数 | `0.0012` | `0.002` |
+| `amp` | ディスプレイスメント振幅 | `125` | `200` |
+| `grain` | グレイン有効化 | `true` | `false` |
+| `grainIntensity` | グレイン強さ | `0.04` | `0.1` |
+| `g_{row}_{col}` | グリッド各セルの色インデックス | 自動生成 | `g_0_0=0` |
+
+## 🏗️ アーキテクチャ
+
+### システム構成図
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   ユーザー      │    │ CloudFlare       │    │ CloudFlare R2   │
+│   (ブラウザ)    │    │ Workers          │    │ (オブジェクト    │
+│                 │    │                  │    │  ストレージ)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         │ 1. 画像リクエスト      │                        │
+         │ ──────────────────────→│                        │
+         │                        │                        │
+         │                        │ 2. キャッシュチェック  │
+         │                        │ ──────────────────────→│
+         │                        │                        │
+         │                        │ 3. キャッシュ結果      │
+         │                        │ ←──────────────────────│
+         │                        │                        │
+         │                        │ 4. 画像生成            │
+         │                        │ (WASM/JS)              │
+         │                        │                        │
+         │                        │ 5. キャッシュ保存      │
+         │                        │ ──────────────────────→│
+         │                        │                        │
+         │ 6. JPEG画像レスポンス  │                        │
+         │ ←──────────────────────│                        │
+```
+
+### 画像生成フロー
+1. **リクエスト受信**: URLパラメータから画像設定を解析
+2. **キャッシュチェック**: CloudFlare R2から既存画像を検索
+3. **画像生成**: 
+   - キャッシュなしの場合のみ実行
+   - WASM版（推奨）またはJavaScript版でメッシュグラデーション生成
+4. **キャッシュ保存**: 生成した画像をR2に永続化
+5. **レスポンス配信**: JPEG画像をCDN経由で配信
+
+### 技術的詳細
+
+#### WASM版（高速）
+- **言語**: AssemblyScript
+- **最適化**: インライン関数、直接メモリアクセス
+- **生成時間**: 約1秒（FHD 1920×1080）
+- **バイナリサイズ**: 6KB
+
+#### JavaScript版（互換性重視）
+- **言語**: TypeScript
+- **生成時間**: 2秒以上（重い処理）
+- **用途**: WASMが利用できない環境でのフォールバック
+
+#### ストレージ戦略
+- **CloudFlare R2**: 生成画像の永続キャッシュ
+- **キャッシュキー**: URLパラメータのハッシュ値
+- **TTL**: 永続保存（手動削除まで保持）
+
+### パフォーマンス最適化
+- **WASM版**: 約5倍高速（214ms vs 1072ms）
+- **JPEG出力**: PNG比で約6.7倍小さい（374KB vs 2.4MB）
+- **メモリ効率**: StaticArrayと直接メモリアクセス
+- **インライン最適化**: 関数呼び出しオーバーヘッド削減
+- **CDN配信**: CloudFlareのグローバルネットワーク活用
+
+## 🚀 デプロイ
+
+### 1. CloudFlare R2バケット作成
 ```bash
-# Cloudflareにログイン
 npx wrangler login
-
-# R2バケットを作成
 npx wrangler r2 bucket create image-placeholder-cache
 ```
 
-### 2. デプロイ
-
+### 2. デプロイ実行
 ```bash
 pnpm deploy
 ```
 
-デプロイが完了すると、Cloudflare Workersにアプリケーションがデプロイされます。
-表示されたURLにアクセスして動作を確認してください。
+### 3. カスタムドメイン設定
+CloudFlareダッシュボードからWorkers & Pagesでドメインを設定
 
-### カスタムドメインの設定
+## 🔧 開発
 
-Cloudflareダッシュボードから、Workers & Pagesセクションでカスタムドメインを設定できます。
-
-## トラブルシューティング
-
-### R2有効化エラー
-
-```
-Please enable R2 through the Cloudflare Dashboard.
+### テスト実行
+```bash
+pnpm test
 ```
 
-このエラーが出た場合：
+### ビルド
+```bash
+# WASMビルド
+pnpm asbuild
 
-1. [Cloudflareダッシュボード](https://dash.cloudflare.com/)にログイン
-2. 左サイドバーから **R2** を選択
-3. **Enable R2** ボタンをクリックして有効化
-4. 支払い方法を設定（R2には無料枠があります）
-   - 10 GB ストレージ
-   - 100万回の書き込み/月
-   - 1000万回の読み取り/月
-5. 有効化後、再度バケット作成コマンドを実行
+# リリースビルド
+pnpm asbuild:release
+```
 
-### R2なしでデプロイ（開発用）
+## 📊 パフォーマンス
 
-R2を使わずに一時的にデプロイしたい場合は、`wrangler.jsonc`の`r2_buckets`セクションをコメントアウトし、`src/index.ts`のキャッシュ処理を修正してください。ただし、画像は毎回生成されるため本番環境には推奨しません。
+| 項目 | WASM版 | JavaScript版 |
+|------|--------|-------------|
+| 生成時間 | ~214ms | ~1072ms |
+| ファイルサイズ | 374KB | 374KB |
+| バイナリサイズ | 6KB | - |
+| 依存関係 | なし | あり |
+
+## 🎯 具体的な用途例
+
+### 1. 開発時のプレースホルダ
+```html
+<!-- ブログ記事のサムネイルプレースホルダ -->
+<img src="https://your-domain.workers.dev/image-wasm?width=400&height=250&color0=#667eea&color1=#764ba2&color2=#8b5cf6" alt="Article Thumbnail">
+
+<!-- 商品画像のプレースホルダ -->
+<img src="https://your-domain.workers.dev/image-wasm?width=300&height=300&color0=#ff9a9e&color1=#fecfef&color2=#fecfef" alt="Product Image">
+```
+
+### 2. 背景画像として活用
+```css
+/* CSS背景画像 */
+.hero-section {
+  background-image: url('https://your-domain.workers.dev/image-wasm?width=1920&height=1080&color0=#667eea&color1=#764ba2&color2=#8b5cf6');
+  background-size: cover;
+  background-position: center;
+}
+```
+
+### 3. レスポンシブ画像
+```html
+<!-- 様々なデバイスサイズに対応 -->
+<picture>
+  <source media="(max-width: 600px)" 
+          srcset="https://your-domain.workers.dev/image-wasm?width=400&height=300&color0=#667eea&color1=#764ba2&color2=#8b5cf6">
+  <source media="(max-width: 1200px)" 
+          srcset="https://your-domain.workers.dev/image-wasm?width=800&height=600&color0=#667eea&color1=#764ba2&color2=#8b5cf6">
+  <img src="https://your-domain.workers.dev/image-wasm?width=1200&height=900&color0=#667eea&color1=#764ba2&color2=#8b5cf6" 
+       alt="Responsive Placeholder">
+</picture>
+```
+
+### 4. デザインシステムでの活用
+```javascript
+// 動的にプレースホルダを生成
+function generatePlaceholder(width, height, theme = 'default') {
+  const themes = {
+    default: ['#667eea', '#764ba2', '#8b5cf6'],
+    warm: ['#ff9a9e', '#fecfef', '#fecfef'],
+    cool: ['#a8edea', '#fed6e3', '#d299c2']
+  };
+  
+  const colors = themes[theme];
+  return `https://your-domain.workers.dev/image-wasm?width=${width}&height=${height}&color0=${colors[0]}&color1=${colors[1]}&color2=${colors[2]}`;
+}
+```
+
+### 5. プロトタイピング
+- **Figma/Sketch代替**: 迅速なモックアップ作成
+- **ワイヤーフレーム**: 視覚的な要素の配置確認
+- **A/Bテスト**: 異なる色・サイズでの比較検証
+
+## 📝 ライセンス
+
+MIT License
+
+---
+
+**注意**: このサービスはCloudFlare WorkersのCPU時間で課金されます。WASM版の使用を強く推奨します。
